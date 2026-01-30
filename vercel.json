@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm run build:core && cd packages/nostrcat-web && npm run build",
+  "outputDirectory": "packages/nostrcat-web/.next",
+  "installCommand": "npm install",
+  "framework": "nextjs"
+}

@@ -22,15 +22,38 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+  /* 防止移动端橡皮筋效果 */
+  overscroll-behavior: none;
+  /* 优化触摸滚动 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* iOS 安全区域适配 */
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-pl {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-pr {
+  padding-right: env(safe-area-inset-right);
 }
 
 @layer components {
   .btn {
     @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+    /* 移动端触摸优化 */
+    @apply active:scale-95 touch-manipulation;
   }
 
   .btn-primary {
-    @apply bg-primary-500 text-white hover:bg-primary-600;
+    @apply bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700;
   }
 
   .btn-secondary {
@@ -42,13 +65,17 @@ body {
   }
 
   .btn-danger {
-    @apply bg-red-500 text-white hover:bg-red-600;
+    @apply bg-red-500 text-white hover:bg-red-600 active:bg-red-700;
   }
 
   .input {
-    @apply w-full px-4 py-2 rounded-lg border border-dark-300 dark:border-dark-600
+    @apply w-full px-4 py-3 rounded-lg border border-dark-300 dark:border-dark-600
            bg-white dark:bg-dark-800 text-dark-900 dark:text-dark-100
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    /* 移动端优化：防止缩放 */
+    @apply text-base;
+    /* 触摸友好的输入框 */
+    -webkit-appearance: none;
   }
 
   .card {
@@ -58,31 +85,89 @@ body {
   .avatar {
     @apply rounded-full object-cover;
   }
+
+  /* 移动端可点击区域优化 */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
 }
 
-/* 滚动条样式 */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* 滚动条样式 - 桌面端 */
+@media (hover: hover) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+/* 移动端隐藏滚动条但保持滚动功能 */
+@media (hover: none) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background: #94a3b8;
-  border-radius: 4px;
+/* 移动端点击高亮优化 */
+@media (hover: none) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+/* 防止选中文本（移动端） */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: #475569;
+/* 拉动刷新样式 */
+.pull-to-refresh {
+  @apply flex items-center justify-center py-4 text-dark-400;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+/* 骨架屏加载动画 */
+.skeleton {
+  @apply bg-dark-700 rounded animate-pulse;
+}
+
+/* 移动端模态框适配 */
+.modal-mobile {
+  @apply fixed inset-0 z-50 flex items-end md:items-center justify-center;
+}
+
+.modal-mobile .modal-content {
+  @apply w-full md:w-auto md:max-w-lg rounded-t-2xl md:rounded-2xl;
+  max-height: 90vh;
+  max-height: 90dvh;
+}
+
+/* 底部安全区域占位 */
+.bottom-nav-spacer {
+  @apply h-20 md:h-0;
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import '@/styles/globals.css'
@@ -10,6 +10,21 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'NoStrCat - 去中心化社交',
   description: '结合 Nostr 协议与 OP_CAT Layer 的去中心化社交平台',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'NoStrCat',
+  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#0f172a',
 }
 
 export default function RootLayout({
@@ -53,7 +68,8 @@ export default function RootLayout({
           <div className="min-h-screen bg-dark-950 text-dark-100">
             <div className="flex">
               <Sidebar />
-              <main className="flex-1 ml-64">
+              {/* 桌面端有侧边栏，移动端有底部导航 */}
+              <main className="flex-1 md:ml-64 pb-20 md:pb-0">
                 {children}
               </main>
             </div>

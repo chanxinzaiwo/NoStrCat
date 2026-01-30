@@ -52,8 +52,11 @@ export default function ChatPage() {
 
   if (!isLoggedIn) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="card text-center py-16">
+      <div className="h-[calc(100vh-5rem)] md:h-screen flex items-center justify-center p-4">
+        <div className="card bg-dark-900 text-center py-12 px-6 w-full max-w-sm">
+          <svg className="w-16 h-16 mx-auto mb-4 text-dark-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
           <p className="text-dark-400 mb-4">请先登录使用消息功能</p>
           <a href="/" className="btn btn-primary">
             返回首页
@@ -67,19 +70,22 @@ export default function ChatPage() {
     activeTab === 'group' ? c.isGroup : !c.isGroup
   )
 
+  // 移动端：如果选中了会话，只显示聊天室
+  const showChatRoom = selectedConversation !== null
+
   return (
-    <div className="h-screen flex">
-      {/* 会话列表 */}
-      <div className="w-80 border-r border-dark-800 flex flex-col">
+    <div className="h-[calc(100vh-5rem)] md:h-screen flex">
+      {/* 会话列表 - 移动端选中会话时隐藏 */}
+      <div className={`${showChatRoom ? 'hidden md:flex' : 'flex'} w-full md:w-80 border-r border-dark-800 flex-col`}>
         {/* 头部 */}
-        <div className="p-4 border-b border-dark-800">
+        <div className="p-4 border-b border-dark-800 safe-area-pt">
           <h1 className="text-xl font-bold mb-4">消息</h1>
 
           {/* 标签切换 */}
           <div className="flex bg-dark-800 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('private')}
-              className={`flex-1 py-2 text-sm rounded-md transition-colors ${
+              className={`flex-1 py-2.5 text-sm rounded-md transition-colors ${
                 activeTab === 'private'
                   ? 'bg-primary-500 text-white'
                   : 'text-dark-400 hover:text-dark-200'
@@ -89,7 +95,7 @@ export default function ChatPage() {
             </button>
             <button
               onClick={() => setActiveTab('group')}
-              className={`flex-1 py-2 text-sm rounded-md transition-colors ${
+              className={`flex-1 py-2.5 text-sm rounded-md transition-colors ${
                 activeTab === 'group'
                   ? 'bg-primary-500 text-white'
                   : 'text-dark-400 hover:text-dark-200'
@@ -115,7 +121,7 @@ export default function ChatPage() {
             <button
               key={conv.id}
               onClick={() => setSelectedConversation(conv.id)}
-              className={`w-full p-4 flex items-center space-x-3 hover:bg-dark-800 transition-colors ${
+              className={`w-full p-4 flex items-center space-x-3 hover:bg-dark-800 active:bg-dark-700 transition-colors ${
                 selectedConversation === conv.id ? 'bg-dark-800' : ''
               }`}
             >
@@ -145,7 +151,7 @@ export default function ChatPage() {
                     {conv.lastMessage}
                   </span>
                   {conv.unread > 0 && (
-                    <span className="bg-primary-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    <span className="bg-primary-500 text-white text-xs px-2 py-0.5 rounded-full ml-2">
                       {conv.unread}
                     </span>
                   )}
@@ -163,16 +169,19 @@ export default function ChatPage() {
 
         {/* 新建会话按钮 */}
         <div className="p-4 border-t border-dark-800">
-          <button className="btn btn-primary w-full">
+          <button className="btn btn-primary w-full py-3">
             {activeTab === 'group' ? '创建群组' : '发起私聊'}
           </button>
         </div>
       </div>
 
-      {/* 聊天区域 */}
-      <div className="flex-1 flex flex-col">
+      {/* 聊天区域 - 移动端未选中时隐藏 */}
+      <div className={`${showChatRoom ? 'flex' : 'hidden md:flex'} flex-1 flex-col`}>
         {selectedConversation ? (
-          <ChatRoom conversationId={selectedConversation} />
+          <ChatRoom
+            conversationId={selectedConversation}
+            onBack={() => setSelectedConversation(null)}
+          />
         ) : (
           <div className="flex-1 flex items-center justify-center text-dark-400">
             <div className="text-center">
@@ -188,7 +197,7 @@ export default function ChatPage() {
   )
 }
 
-function ChatRoom({ conversationId }: { conversationId: string }) {
+function ChatRoom({ conversationId, onBack }: { conversationId: string; onBack: () => void }) {
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState([
     { id: '1', sender: 'other', content: '你好！', timestamp: Date.now() - 60000 },
@@ -209,8 +218,17 @@ function ChatRoom({ conversationId }: { conversationId: string }) {
   return (
     <>
       {/* 聊天头部 */}
-      <div className="p-4 border-b border-dark-800 flex items-center justify-between">
+      <div className="p-4 border-b border-dark-800 flex items-center justify-between safe-area-pt">
         <div className="flex items-center space-x-3">
+          {/* 移动端返回按钮 */}
+          <button
+            onClick={onBack}
+            className="md:hidden p-2 -ml-2 text-dark-400 hover:text-dark-200 rounded-lg"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
           <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
             <span className="text-primary-400">?</span>
           </div>
@@ -236,13 +254,13 @@ function ChatRoom({ conversationId }: { conversationId: string }) {
             className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] px-4 py-2 rounded-2xl ${
+              className={`max-w-[80%] md:max-w-[70%] px-4 py-2 rounded-2xl ${
                 msg.sender === 'me'
                   ? 'bg-primary-500 text-white rounded-br-md'
                   : 'bg-dark-800 text-dark-100 rounded-bl-md'
               }`}
             >
-              <p>{msg.content}</p>
+              <p className="break-words">{msg.content}</p>
               <p className={`text-xs mt-1 ${
                 msg.sender === 'me' ? 'text-primary-200' : 'text-dark-500'
               }`}>
@@ -254,25 +272,25 @@ function ChatRoom({ conversationId }: { conversationId: string }) {
       </div>
 
       {/* 输入区域 */}
-      <div className="p-4 border-t border-dark-800">
+      <div className="p-4 border-t border-dark-800 safe-area-pb">
         <div className="flex items-center space-x-3">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
             placeholder="输入消息..."
             className="input flex-1"
           />
           <button
             onClick={handleSend}
             disabled={!message.trim()}
-            className="btn btn-primary"
+            className="btn btn-primary px-6"
           >
             发送
           </button>
         </div>
-        <p className="text-xs text-dark-500 mt-2">
+        <p className="text-xs text-dark-500 mt-2 text-center md:text-left">
           消息使用 NIP-17 端到端加密
         </p>
       </div>

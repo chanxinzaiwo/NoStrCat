@@ -94,14 +94,23 @@ export function LoginModal({ onClose }: LoginModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="card w-full max-w-md mx-4 bg-dark-900">
+    <div className="fixed inset-0 bg-black/60 flex items-end md:items-center justify-center z-50 p-0 md:p-4">
+      {/* 背景点击关闭 */}
+      <div className="absolute inset-0" onClick={onClose} />
+
+      {/* 弹窗内容 */}
+      <div className="relative card w-full md:max-w-md bg-dark-900 rounded-t-2xl md:rounded-2xl max-h-[90vh] overflow-y-auto safe-area-pb">
+        {/* 移动端拖动指示器 */}
+        <div className="md:hidden flex justify-center py-2">
+          <div className="w-10 h-1 bg-dark-600 rounded-full" />
+        </div>
+
         {/* 标题 */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold">欢迎使用 NoStrCat</h2>
+        <div className="flex items-center justify-between px-4 md:px-6 py-4">
+          <h2 className="text-lg md:text-xl font-bold">欢迎使用 NoStrCat</h2>
           <button
             onClick={onClose}
-            className="text-dark-400 hover:text-dark-200"
+            className="p-2 -mr-2 text-dark-400 hover:text-dark-200 rounded-lg"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -110,7 +119,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         </div>
 
         {/* 标签切换 */}
-        <div className="flex border-b border-dark-700 mb-6">
+        <div className="flex border-b border-dark-700 px-4 md:px-6">
           {[
             { key: 'login', label: '快速登录' },
             { key: 'create', label: '创建账户' },
@@ -123,7 +132,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
                 setError('')
                 setGeneratedKeys(null)
               }}
-              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+              className={`flex-1 py-3 text-sm font-medium transition-colors ${
                 tab === t.key
                   ? 'text-primary-400 border-b-2 border-primary-400'
                   : 'text-dark-400 hover:text-dark-200'
@@ -135,7 +144,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
         </div>
 
         {/* 内容 */}
-        <div className="space-y-4">
+        <div className="p-4 md:p-6 space-y-4">
           {tab === 'login' && (
             <>
               <p className="text-dark-400 text-sm">
@@ -151,10 +160,13 @@ export function LoginModal({ onClose }: LoginModalProps) {
                     setError('未检测到 Nostr 浏览器扩展')
                   }
                 }}
-                className="btn btn-primary w-full"
+                className="btn btn-primary w-full py-3"
               >
                 使用扩展登录
               </button>
+              {error && (
+                <p className="text-red-400 text-sm text-center">{error}</p>
+              )}
               <p className="text-dark-500 text-xs text-center">
                 推荐使用 Alby 或 nos2x 扩展
               </p>
@@ -173,7 +185,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
                   </p>
                   <button
                     onClick={generateKeyPair}
-                    className="btn btn-primary w-full"
+                    className="btn btn-primary w-full py-3"
                   >
                     生成新密钥对
                   </button>
@@ -185,7 +197,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
                       <label className="block text-sm text-dark-400 mb-1">
                         公钥 (npub)
                       </label>
-                      <div className="input bg-dark-800 text-xs font-mono break-all">
+                      <div className="input bg-dark-800 text-xs font-mono break-all py-3">
                         {generatedKeys.publicKey}
                       </div>
                     </div>
@@ -193,7 +205,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
                       <label className="block text-sm text-dark-400 mb-1">
                         私钥 (nsec) - 请安全保存！
                       </label>
-                      <div className="input bg-dark-800 text-xs font-mono break-all text-red-400">
+                      <div className="input bg-dark-800 text-xs font-mono break-all text-red-400 py-3">
                         {generatedKeys.privateKey}
                       </div>
                     </div>
@@ -205,7 +217,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
                   </div>
                   <button
                     onClick={handleCreateAccount}
-                    className="btn btn-primary w-full"
+                    className="btn btn-primary w-full py-3"
                   >
                     我已保存，继续
                   </button>
@@ -234,7 +246,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
               )}
               <button
                 onClick={handleImportKey}
-                className="btn btn-primary w-full"
+                className="btn btn-primary w-full py-3"
               >
                 导入并登录
               </button>
