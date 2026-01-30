@@ -1,18 +1,23 @@
 {
-  "name": "nostrcat",
-  "version": "0.1.0",
-  "description": "NoStrCat - Decentralized social platform combining Nostr protocol with OP_CAT Layer blockchain",
-  "main": "dist/index.js",
+  "name": "nostrcat-monorepo",
+  "version": "0.2.0",
+  "private": true,
+  "description": "NoStrCat - Decentralized social + chat platform combining Nostr protocol with OP_CAT Layer",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*",
+    "contracts/*"
   ],
   "scripts": {
-    "build": "npx scrypt-cli compile",
+    "build": "npm run build:contracts && npm run build:chat-core",
     "build:contracts": "npx scrypt-cli compile",
-    "build:core": "cd packages/nostrcat-core && npm run build",
-    "build:all": "npm run build:contracts && npm run build:core",
-    "test": "mocha --require ts-node/register tests/**/*.test.ts",
+    "build:chat-core": "cd packages/chat-core && npm run build",
+    "build:web": "cd packages/nostrcat-web && npm run build",
+    "build:all": "npm run build:contracts && npm run build:chat-core && npm run build:web",
+    "dev": "cd packages/nostrcat-web && npm run dev",
+    "test": "npm run test:contracts && npm run test:chat-core",
     "test:contracts": "mocha --require ts-node/register tests/**/*.test.ts",
+    "test:chat-core": "cd packages/chat-core && npm test",
     "deploy": "npx tsx deploy.ts",
     "genprivkey": "npx tsx scripts/genPrivKey.ts",
     "lint": "eslint src --ext .ts",
