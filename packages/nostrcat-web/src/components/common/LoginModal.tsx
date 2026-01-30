@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useUserStore } from '@/stores/userStore'
+import { nsecToHex, hexToNsec, hexToNpub } from '@/lib/nostr'
 
 interface LoginModalProps {
   onClose: () => void
@@ -10,29 +11,30 @@ interface LoginModalProps {
 type TabType = 'login' | 'create' | 'import'
 
 export function LoginModal({ onClose }: LoginModalProps) {
-  const [tab, setTab] = useState<TabType>('create') // 默认显示创建账户
+  const [tab, setTab] = useState<TabType>('create')
   const [privateKey, setPrivateKey] = useState('')
   const [error, setError] = useState('')
   const [generatedKeys, setGeneratedKeys] = useState<{
     privateKey: string
     publicKey: string
+    nsec: string
+    npub: string
   } | null>(null)
 
   const login = useUserStore((state) => state.login)
 
   // 登录函数
-  const doLogin = async (key: string) => {
+  const doLogin = async (hexKey: string) => {
     try {
-      await login(key)
-      // 同时保存到 localStorage 供 NostrCat 使用
-      localStorage.setItem('nostrcat_private_key', key)
+      await login(hexKey)
+      localStorage.setItem('nostrcat_private_key', hexKey)
     } catch (e) {
       console.error('Login error:', e)
-      setError('登录失败')
+      throw new Error('登录失败')
     }
   }
 
-  // 生成随机密钥对（使用 secp256k1）
+  // 生成随机密钥对
   const generateKeyPair = async () => {
     try {
       const randomBytes = new Uint8Array(32)
@@ -41,18 +43,21 @@ export function LoginModal({ onClose }: LoginModalProps) {
         .map(b => b.toString(16).padStart(2, '0'))
         .join('')
 
-      // 使用 secp256k1 派生公钥
       const secp = await import('@noble/secp256k1')
       const privKeyBytes = Uint8Array.from(
         privKey.match(/.{2}/g)!.map(byte => parseInt(byte, 16))
       )
-      const pubKeyBytes = secp.getPublicKey(privKeyBytes, true) // compressed
-      // 去掉前缀字节（02 或 03），只保留 x 坐标
+      const pubKeyBytes = secp.getPublicKey(privKeyBytes, true)
       const pubKey = Array.from(pubKeyBytes.slice(1))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('')
 
-      setGeneratedKeys({ privateKey: privKey, publicKey: pubKey })
+      setGeneratedKeys({
+        privateKey: privKey,
+        publicKey: pubKey,
+        nsec: hexToNsec(privKey),
+        npub: hexToNpub(pubKey),
+      })
     } catch (err) {
       console.error('Key generation error:', err)
       setError('密钥生成失败')
@@ -65,16 +70,28 @@ export function LoginModal({ onClose }: LoginModalProps) {
       return
     }
 
-    // 验证私钥格式（64 位十六进制或 nsec 格式）
-    if (!/^[0-9a-f]{64}$/i.test(privateKey) && !privateKey.startsWith('nsec')) {
-      setError('私钥格式无效')
+    let hexKey = privateKey.trim()
+
+    // 如果是 nsec 格式，转换为 hex
+    if (hexKey.startsWith('nsec')) {
+      const converted = nsecToHex(hexKey)
+      if (!converted) {
+        setError('nsec 格式无效')
+        return
+      }
+      hexKey = converted
+    }
+
+    // 验证是否为有效的 64 位十六进制
+    if (!/^[0-9a-f]{64}$/i.test(hexKey)) {
+      setError('私钥格式无效（需要 64 位十六进制或 nsec 格式）')
       return
     }
 
     try {
-      await doLogin(privateKey)
+      await doLogin(hexKey)
       onClose()
-    } catch (e) {
+    } catch {
       setError('登录失败')
     }
   }
@@ -85,27 +102,28 @@ export function LoginModal({ onClose }: LoginModalProps) {
       return
     }
 
-    await doLogin(generatedKeys.privateKey)
-    onClose()
+    try {
+      await doLogin(generatedKeys.privateKey)
+      onClose()
+    } catch {
+      setError('登录失败')
+    }
   }
 
-  const handleImportKey = () => {
-    handleLogin()
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text)
+    alert(`${label} 已复制到剪贴板`)
   }
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end md:items-center justify-center z-50 p-0 md:p-4">
-      {/* 背景点击关闭 */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* 弹窗内容 */}
       <div className="relative card w-full md:max-w-md bg-dark-900 rounded-t-2xl md:rounded-2xl max-h-[90vh] overflow-y-auto safe-area-pb">
-        {/* 移动端拖动指示器 */}
         <div className="md:hidden flex justify-center py-2">
           <div className="w-10 h-1 bg-dark-600 rounded-full" />
         </div>
 
-        {/* 标题 */}
         <div className="flex items-center justify-between px-4 md:px-6 py-4">
           <h2 className="text-lg md:text-xl font-bold">欢迎使用 NoStrCat</h2>
           <button
@@ -118,7 +136,6 @@ export function LoginModal({ onClose }: LoginModalProps) {
           </button>
         </div>
 
-        {/* 标签切换 */}
         <div className="flex border-b border-dark-700 px-4 md:px-6">
           {[
             { key: 'login', label: '快速登录' },
@@ -143,7 +160,6 @@ export function LoginModal({ onClose }: LoginModalProps) {
           ))}
         </div>
 
-        {/* 内容 */}
         <div className="p-4 md:p-6 space-y-4">
           {tab === 'login' && (
             <>
@@ -151,11 +167,16 @@ export function LoginModal({ onClose }: LoginModalProps) {
                 使用浏览器扩展（如 Alby、nos2x）登录，无需输入私钥。
               </p>
               <button
-                onClick={() => {
-                  // 检查 NIP-07 扩展
-                  if (typeof window !== 'undefined' && (window as unknown as { nostr?: unknown }).nostr) {
-                    // 使用扩展登录
-                    alert('检测到 Nostr 扩展，正在登录...')
+                onClick={async () => {
+                  const w = window as unknown as { nostr?: { getPublicKey: () => Promise<string> } }
+                  if (w.nostr) {
+                    try {
+                      const pubkey = await w.nostr.getPublicKey()
+                      // NIP-07 模式：只有公钥，无私钥
+                      alert(`已获取公钥: ${pubkey.slice(0, 8)}...（NIP-07 模式暂不完全支持）`)
+                    } catch {
+                      setError('扩展授权被拒绝')
+                    }
                   } else {
                     setError('未检测到 Nostr 浏览器扩展')
                   }
@@ -164,9 +185,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
               >
                 使用扩展登录
               </button>
-              {error && (
-                <p className="text-red-400 text-sm text-center">{error}</p>
-              )}
+              {error && <p className="text-red-400 text-sm text-center">{error}</p>}
               <p className="text-dark-500 text-xs text-center">
                 推荐使用 Alby 或 nos2x 扩展
               </p>
@@ -175,18 +194,13 @@ export function LoginModal({ onClose }: LoginModalProps) {
 
           {tab === 'create' && (
             <>
-              {error && (
-                <p className="text-red-400 text-sm">{error}</p>
-              )}
+              {error && <p className="text-red-400 text-sm">{error}</p>}
               {!generatedKeys ? (
                 <>
                   <p className="text-dark-400 text-sm">
                     创建新的 Nostr 账户。请务必保存好您的私钥！
                   </p>
-                  <button
-                    onClick={generateKeyPair}
-                    className="btn btn-primary w-full py-3"
-                  >
+                  <button onClick={generateKeyPair} className="btn btn-primary w-full py-3">
                     生成新密钥对
                   </button>
                 </>
@@ -194,31 +208,32 @@ export function LoginModal({ onClose }: LoginModalProps) {
                 <>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm text-dark-400 mb-1">
-                        公钥 (npub)
-                      </label>
-                      <div className="input bg-dark-800 text-xs font-mono break-all py-3">
-                        {generatedKeys.publicKey}
+                      <label className="block text-sm text-dark-400 mb-1">公钥 (npub)</label>
+                      <div
+                        className="input bg-dark-800 text-xs font-mono break-all py-3 cursor-pointer hover:bg-dark-700"
+                        onClick={() => copyToClipboard(generatedKeys.npub, '公钥')}
+                      >
+                        {generatedKeys.npub}
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm text-dark-400 mb-1">
-                        私钥 (nsec) - 请安全保存！
+                        私钥 (nsec) - 点击复制！
                       </label>
-                      <div className="input bg-dark-800 text-xs font-mono break-all text-red-400 py-3">
-                        {generatedKeys.privateKey}
+                      <div
+                        className="input bg-dark-800 text-xs font-mono break-all text-red-400 py-3 cursor-pointer hover:bg-dark-700"
+                        onClick={() => copyToClipboard(generatedKeys.nsec, '私钥')}
+                      >
+                        {generatedKeys.nsec}
                       </div>
                     </div>
                   </div>
                   <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3">
                     <p className="text-yellow-400 text-sm">
-                      ⚠️ 请立即复制并安全保存您的私钥！私钥是恢复账户的唯一方式。
+                      ⚠️ 请立即点击上方私钥复制并安全保存！私钥是恢复账户的唯一方式。
                     </p>
                   </div>
-                  <button
-                    onClick={handleCreateAccount}
-                    className="btn btn-primary w-full py-3"
-                  >
+                  <button onClick={handleCreateAccount} className="btn btn-primary w-full py-3">
                     我已保存，继续
                   </button>
                 </>
@@ -238,16 +253,11 @@ export function LoginModal({ onClose }: LoginModalProps) {
                   setPrivateKey(e.target.value)
                   setError('')
                 }}
-                placeholder="nsec... 或 hex 私钥"
+                placeholder="nsec1... 或 64位十六进制"
                 className="input"
               />
-              {error && (
-                <p className="text-red-400 text-sm">{error}</p>
-              )}
-              <button
-                onClick={handleImportKey}
-                className="btn btn-primary w-full py-3"
-              >
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+              <button onClick={handleLogin} className="btn btn-primary w-full py-3">
                 导入并登录
               </button>
               <p className="text-dark-500 text-xs text-center">

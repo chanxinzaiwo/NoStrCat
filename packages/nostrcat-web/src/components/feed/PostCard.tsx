@@ -5,6 +5,9 @@ import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import Link from 'next/link'
 import { ZapModal } from '../wallet/ZapModal'
+import { PostContent } from './PostContent'
+import { useUserStore } from '@/stores/userStore'
+import { publishReaction } from '@/lib/nostr'
 
 interface PostStats {
   replies: number
@@ -37,28 +40,49 @@ interface PostCardProps {
 export function PostCard({ post }: PostCardProps) {
   const [liked, setLiked] = useState(false)
   const [reposted, setReposted] = useState(false)
+  const [isLiking, setIsLiking] = useState(false)
   const [showZapModal, setShowZapModal] = useState(false)
   const [stats, setStats] = useState(post.stats)
+
+  const { isLoggedIn, publicKey, privateKey, relays } = useUserStore()
 
   const timeAgo = formatDistanceToNow(new Date(post.created_at * 1000), {
     addSuffix: true,
     locale: zhCN,
   })
 
-  const handleLike = () => {
-    setLiked(!liked)
-    setStats(prev => ({
-      ...prev,
-      likes: liked ? prev.likes - 1 : prev.likes + 1,
-    }))
+  const handleLike = async () => {
+    if (!isLoggedIn || !publicKey || !privateKey || isLiking) return
+
+    setIsLiking(true)
+    try {
+      const success = await publishReaction(
+        post.id,
+        post.pubkey,
+        '+',
+        publicKey,
+        privateKey,
+        relays
+      )
+      if (success) {
+        setLiked(true)
+        setStats(prev => ({ ...prev, likes: prev.likes + 1 }))
+      }
+    } catch (err) {
+      console.error('Like failed:', err)
+    } finally {
+      setIsLiking(false)
+    }
   }
 
   const handleRepost = () => {
+    if (!isLoggedIn) return
     setReposted(!reposted)
     setStats(prev => ({
       ...prev,
       reposts: reposted ? prev.reposts - 1 : prev.reposts + 1,
     }))
+    // TODO: 实际发布 repost 事件
   }
 
   const formatZaps = (sats: number) => {
@@ -132,8 +156,8 @@ export function PostCard({ post }: PostCardProps) {
           )}
 
           {/* 帖子内容 */}
-          <div className="text-dark-100 whitespace-pre-wrap break-words mb-3 text-sm md:text-base leading-relaxed">
-            {post.content}
+          <div className="text-dark-100 mb-3">
+            <PostContent content={post.content} />
           </div>
 
           {/* 互动按钮 */}
