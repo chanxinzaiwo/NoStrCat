@@ -15,7 +15,6 @@ export {
 } from './crypto/nip44'
 
 export {
-  NostrEvent,
   EVENT_KIND,
   createSeal,
   unwrapSeal,
@@ -25,33 +24,32 @@ export {
   unwrapDirectMessage,
   verifyEvent
 } from './crypto/nip59'
+export type { NostrEvent } from './crypto/nip59'
 
 // 私聊模块
-export {
-  DirectMessageService,
-  type DirectMessage,
-  type Conversation,
-  type MessageStatus,
-  type DirectMessageServiceConfig,
-  type RelayConnection
+export { DirectMessageService } from './dm/DirectMessageService'
+export type {
+  DirectMessage,
+  Conversation,
+  MessageStatus,
+  DirectMessageServiceConfig,
+  RelayConnection
 } from './dm/DirectMessageService'
 
 // 私有群聊模块
-export {
-  PrivateGroupService,
-  type PrivateGroup,
-  type GroupMessage,
-  GROUP_EVENT_KIND,
-  type PrivateGroupServiceConfig
+export { PrivateGroupService, GROUP_EVENT_KIND } from './groups/PrivateGroupService'
+export type {
+  PrivateGroup,
+  GroupMessage,
+  PrivateGroupServiceConfig
 } from './groups/PrivateGroupService'
 
 // 公开频道模块
-export {
-  ChannelService,
-  type Channel,
-  type ChannelMessage,
-  CHANNEL_KIND,
-  type ChannelServiceConfig
+export { ChannelService, CHANNEL_KIND } from './channels/ChannelService'
+export type {
+  Channel,
+  ChannelMessage,
+  ChannelServiceConfig
 } from './channels/ChannelService'
 
 // 版本信息

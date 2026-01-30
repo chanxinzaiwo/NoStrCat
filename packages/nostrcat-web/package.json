@@ -13,6 +13,7 @@
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^1.8.0",
     "@noble/secp256k1": "^2.3.0",
+    "@nostrcat/chat-core": "file:../chat-core",
     "@nostrcat/core": "file:../nostrcat-core",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
