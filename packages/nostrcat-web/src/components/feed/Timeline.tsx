@@ -34,7 +34,7 @@ export function Timeline() {
   const [oldestTimestamp, setOldestTimestamp] = useState<number | null>(null)
 
   const { events, timelineIds, profiles } = useEventStore()
-  const { profile: userProfile, relays } = useUserStore()
+  const { profile: userProfile, relays, isLoggedIn, publicKey } = useUserStore()
 
   // 从中继器获取帖子
   const loadPosts = useCallback(async (until?: number) => {
@@ -59,7 +59,7 @@ export function Timeline() {
     }
   }, [relays])
 
-  // 初始加载
+  // 初始加载 & 登录后自动刷新
   useEffect(() => {
     let mounted = true
 
@@ -92,7 +92,7 @@ export function Timeline() {
     return () => {
       mounted = false
     }
-  }, [loadPosts])
+  }, [loadPosts, isLoggedIn, publicKey]) // 登录状态或公钥变化时重新加载
 
   // 将事件转换为帖子格式
   const posts = useMemo(() => {
