@@ -39,9 +39,15 @@ export function Timeline() {
   // 从中继器获取帖子
   const loadPosts = useCallback(async (until?: number) => {
     try {
-      const filter: { kinds: number[]; limit: number; until?: number } = {
+      const filter: { kinds: number[]; limit: number; until?: number; authors?: string[] } = {
         kinds: [1], // Text notes
         limit: 30,
+      }
+
+      // 如果已登录，只获取自己的帖子
+      if (isLoggedIn && publicKey) {
+        filter.authors = [publicKey]
+        console.log('Fetching own posts for:', publicKey.slice(0, 8) + '...')
       }
 
       if (until) {
@@ -57,7 +63,7 @@ export function Timeline() {
       console.error('Failed to fetch events:', err)
       throw err
     }
-  }, [relays])
+  }, [relays, isLoggedIn, publicKey])
 
   // 初始加载 & 登录后自动刷新
   useEffect(() => {
@@ -220,7 +226,9 @@ export function Timeline() {
         <svg className="w-12 h-12 mx-auto mb-4 text-dark-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
         </svg>
-        <p className="text-dark-400 mb-4">暂无帖子</p>
+        <p className="text-dark-400 mb-4">
+          {isLoggedIn ? '你还没有发布任何帖子' : '暂无帖子'}
+        </p>
         <button onClick={handleRefresh} className="btn btn-secondary">
           刷新
         </button>
